@@ -41,8 +41,8 @@ def test(file_path, text_feature, AI_edited_level, output_path):
             })
 
     scores_df = pd.DataFrame(scores_list)
-    df[f'EditLens_score_{AI_edited_level}'] = scores_df['EditLens_score_0'].values
-    df[f'EditLens_bucket_{AI_edited_level}'] = scores_df['EditLens_bucket_0'].values
-    df[f'EditLens_probs_{AI_edited_level}'] = scores_df['EditLens_probs_0'].values
+    df[f'EditLens_score_{AI_edited_level}'] = scores_df[f'EditLens_score_{AI_edited_level}'].values
+    df[f'EditLens_bucket_{AI_edited_level}'] = scores_df[f'EditLens_bucket_{AI_edited_level}'].values
+    df[f'EditLens_probs_{AI_edited_level}'] = scores_df[f'EditLens_probs_{AI_edited_level}'].values
 
     df.to_csv(output_path, sep="\t", index=False)
