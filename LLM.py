@@ -32,7 +32,7 @@ def rewrite_batch(file_path,
                   batch_size=8, 
                   sep=","):
     
-    df = pd.read_csv(file_path, sep=sep)
+    df = pd.read_csv(file_path, sep=sep).head(5)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
@@ -65,6 +65,7 @@ def rewrite_batch(file_path,
         all_rewrites.extend(batch_rewrites)
 
     df[f"EditLens_rewrite_{AI_edited_level}"] = all_rewrites
+    
     df.to_csv(output_path, sep=sep, index=False)
     print(f"\nDone! Saved to {output_path}")
 
@@ -120,7 +121,7 @@ if __name__ == "__main__":
 
     rewrite_batch(
         file_path="datasets/ASAP_2.0/combined_ASAP_2.csv", 
-        output_path="test_rewritten.csv", #Intermediate file
+        output_path="test_rewritten.tsv", #Intermediate file
         AI_edited_level=1,
         text_feature="full_text",
         batch_size=16,
@@ -128,8 +129,8 @@ if __name__ == "__main__":
     )
     
     add_metrics(
-        file_path="test_rewritten.csv",
-        output_path="test_final.csv",
+        file_path="test_rewritten.tsv",
+        output_path="test_final.tsv",
         AI_edited_level=1,
         original_col="full_text",
         altered_col="EditLens_rewrite_1",
