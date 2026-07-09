@@ -75,7 +75,7 @@ ngram_model = SentenceTransformer("all-MiniLM-L6-v2", model_kwargs={"dtype": "au
 
 def evaluate(original_text: str, altered_text: str):
     cosine = cosine_distance(original_text, altered_text)
-    ngram = soft_ngram_score(original_text, altered_text, model=ngram_model)
+    ngram = soft_ngram_score(original_text, altered_text)
     lev = Levenshtein.distance(original_text, altered_text)
 
     return cosine, ngram, lev
