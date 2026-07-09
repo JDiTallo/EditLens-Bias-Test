@@ -2,8 +2,8 @@ import pandas as pd
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from EditLens.scripts.scoring.cosine_distance import cosine_distance
-from EditLens.scripts.scoring.soft_ngrams import soft_ngram_score
+from editlens_src.scripts.scoring.cosine_distance import cosine_distance
+from editlens_src.scripts.scoring.soft_ngrams import soft_ngram_score
 from sentence_transformers import SentenceTransformer
 
 import Levenshtein
