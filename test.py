@@ -5,8 +5,9 @@ import torch
 from score import score_text, model, tokenizer, n_buckets, DEVICE, MAX_LENGTH, clean_text
 from scipy.special import softmax
 
-def test(file_path, text_feature, AI_edited_level, output_path):
-    df = pd.read_csv(file_path)
+def test(file_path, text_feature, AI_edited_level, output_path, sep="\t"):
+    
+    df = pd.read_csv(file_path, sep=sep)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     BATCH_SIZE = 64  
@@ -45,4 +46,4 @@ def test(file_path, text_feature, AI_edited_level, output_path):
     df[f'EditLens_bucket_{AI_edited_level}'] = scores_df[f'EditLens_bucket_{AI_edited_level}'].values
     df[f'EditLens_probs_{AI_edited_level}'] = scores_df[f'EditLens_probs_{AI_edited_level}'].values
 
-    df.to_csv(output_path, sep="\t", index=False)
+    df.to_csv(output_path, sep=sep, index=False)
