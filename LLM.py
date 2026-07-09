@@ -74,8 +74,8 @@ cosine_model = SentenceTransformer("Linq-AI-Research/Linq-Embed-Mistral", model_
 ngram_model = SentenceTransformer("all-MiniLM-L6-v2", model_kwargs={"dtype": "auto"})
 
 def evaluate(original_text: str, altered_text: str):
-    cosine = cosine_distance(original_text, altered_text)
-    ngram = soft_ngram_score(original_text, altered_text)
+    cosine = cosine_distance(original_text, altered_text, model=cosine_model)
+    ngram = soft_ngram_score(original_text, altered_text, model=ngram_model)
     lev = Levenshtein.distance(original_text, altered_text)
 
     return cosine, ngram, lev
@@ -129,6 +129,13 @@ if __name__ == "__main__":
         batch_size=16,
         output_sep="\t"
     )
+
+    import gc
+    import torch
+    del model      #Deletes Qwen
+    del tokenizer  
+    gc.collect()   #Forces Python to clean up unreferenced variables
+    torch.cuda.empty_cache() #Forces PyTorch to release the VRAM back to the GPU
     
     add_metrics(
         file_path="test_rewritten.tsv",

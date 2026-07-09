@@ -11,10 +11,13 @@ import argparse
 import torch
 from sentence_transformers import SentenceTransformer
 
+from typing import Optional
+
 
 def cosine_distance(
     text1: str,
     text2: str,
+    model: Optional[SentenceTransformer] = None, # 1. Add this optional parameter
     model_name: str = "Linq-AI-Research/Linq-Embed-Mistral",
 ) -> float:
     """Compute cosine distance between two texts.
@@ -27,11 +30,18 @@ def cosine_distance(
     Returns:
         Cosine distance (1 - cosine_similarity).
     """
-    model = SentenceTransformer(model_name, model_kwargs={"dtype": "auto"})
+    
+    # 2. Only load the model if one wasn't passed in
+    if model is None:
+        model = SentenceTransformer(model_name, model_kwargs={"dtype": "auto"})
+        
     embeddings = model.encode([text1, text2], convert_to_tensor=True)
     embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
     cos_sim = torch.clamp(embeddings[0] @ embeddings[1], -1.0, 1.0)
     return 1.0 - cos_sim.item()
+
+    
+    
 
 
 def main():

@@ -15,6 +15,8 @@ import argparse
 import torch
 from sentence_transformers import SentenceTransformer
 
+from typing import Optional
+
 
 def get_phrases(text: str, min_length: int = 6, max_length: int = 12) -> list[str]:
     """Extract all contiguous word n-grams of length min_length..max_length."""
@@ -31,12 +33,18 @@ def get_phrases(text: str, min_length: int = 6, max_length: int = 12) -> list[st
 def soft_ngram_score(
     source_text: str,
     edited_text: str,
+    model: Optional[SentenceTransformer] = None, # 1. Add this optional parameter
     model_name: str = "all-MiniLM-L6-v2",
     threshold: float = 0.8,
     min_length: int = 6,
     max_length: int = 12,
     batch_size: int = 32,
 ) -> float:
+    """Compute soft n-gram distance between source and edited text."""
+    
+    if model is None:
+        model = SentenceTransformer(model_name, model_kwargs={"dtype": "auto"})
+
     """Compute soft n-gram distance between source and edited text.
 
     Args:
@@ -52,7 +60,6 @@ def soft_ngram_score(
         Distance score (1 - precision), where precision is the fraction of
         edited-text phrases that match a source phrase above the threshold.
     """
-    model = SentenceTransformer(model_name, model_kwargs={"dtype": "auto"})
 
     source_phrases = get_phrases(source_text, min_length=min_length, max_length=max_length)
     edited_phrases = get_phrases(edited_text, min_length=min_length, max_length=max_length)
