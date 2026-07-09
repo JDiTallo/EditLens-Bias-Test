@@ -6,7 +6,7 @@ from editlens_src.scripts.scoring.cosine_distance import cosine_distance
 from editlens_src.scripts.scoring.soft_ngrams import soft_ngram_score
 from sentence_transformers import SentenceTransformer
 
-import Levenshtein
+from rapidfuzz.distance import Levenshtein
 
 #Explicitly uses GPU device
 device = "cuda"
@@ -31,7 +31,8 @@ def rewrite_batch(file_path,
                   output_path, 
                   batch_size=8, 
                   input_sep=",",
-                  output_sep=","):
+                  output_sep=",",
+                  prompt=""):
     
     df = pd.read_csv(file_path, sep=input_sep).head(5)
     df[text_feature] = df[text_feature].fillna("").astype(str)
@@ -46,7 +47,7 @@ def rewrite_batch(file_path,
         for text in batch_df[text_feature]:
             messages = [
                 {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
-                {"role": "user", "content": f"Rewrite the following essay:\n\n{text}"}
+                {"role": "user", "content": f"{prompt}{text}"}
             ]
             chat_text = tokenizer.apply_chat_template(
                 messages, tokenize=False, add_generation_prompt=True
@@ -76,7 +77,7 @@ ngram_model = SentenceTransformer("all-MiniLM-L6-v2", model_kwargs={"dtype": "au
 def evaluate(original_text: str, altered_text: str):
     cosine = cosine_distance(original_text, altered_text, model=cosine_model)
     ngram = soft_ngram_score(original_text, altered_text, model=ngram_model)
-    lev = Levenshtein.distance(original_text, altered_text)
+    lev = Levenshtein.normalized_distance(original_text, altered_text)
 
     return cosine, ngram, lev
 
@@ -127,7 +128,8 @@ if __name__ == "__main__":
         AI_edited_level=1,
         text_feature="full_text",
         batch_size=16,
-        output_sep="\t"
+        output_sep="\t",
+        prompt="Rewrite the following essay"
     )
 
     import gc
