@@ -2,8 +2,8 @@ import pandas as pd
 from tqdm.auto import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
-from editlens_src.scripts.scoring.cosine_distance import cosine_distance
-from editlens_src.scripts.scoring.soft_ngrams import soft_ngram_score
+from EditLens.scripts.scoring.cosine_distance import cosine_distance
+from EditLens.scripts.scoring.soft_ngrams import soft_ngram_score
 from sentence_transformers import SentenceTransformer
 
 import Levenshtein
@@ -30,9 +30,10 @@ def rewrite_batch(file_path,
                   AI_edited_level, 
                   output_path, 
                   batch_size=8, 
-                  sep=","):
+                  input_sep=",",
+                  output_sep=","):
     
-    df = pd.read_csv(file_path, sep=sep).head(5)
+    df = pd.read_csv(file_path, sep=input_sep).head(5)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
@@ -65,8 +66,8 @@ def rewrite_batch(file_path,
         all_rewrites.extend(batch_rewrites)
 
     df[f"EditLens_rewrite_{AI_edited_level}"] = all_rewrites
-    
-    df.to_csv(output_path, sep=sep, index=False)
+
+    df.to_csv(output_path, sep=output_sep, index=False)
     print(f"\nDone! Saved to {output_path}")
 
 cosine_model = SentenceTransformer("Linq-AI-Research/Linq-Embed-Mistral", model_kwargs={"dtype": "auto"})
@@ -85,9 +86,10 @@ def add_metrics(file_path,
                 original_col,
                 altered_col,
                 batch_size=16, 
-                sep=","):
+                input_sep=",",
+                output_sep=","):
     
-    df = pd.read_csv(file_path, sep=sep)
+    df = pd.read_csv(file_path, sep=input_sep)
     total_rows = len(df)
     
     all_cosines = []
@@ -114,7 +116,7 @@ def add_metrics(file_path,
     df[f'EditLens_bucket_{AI_edited_level}_ngram'] = all_ngrams
     df[f'EditLens_probs_{AI_edited_level}_levenshtein'] = all_levs
 
-    df.to_csv(output_path, sep=sep, index=False)
+    df.to_csv(output_path, sep=output_sep, index=False)
     print(f"\nMetrics calculation complete! Saved to {output_path}")
 
 if __name__ == "__main__":
@@ -125,7 +127,7 @@ if __name__ == "__main__":
         AI_edited_level=1,
         text_feature="full_text",
         batch_size=16,
-        sep="\t"
+        output_sep="\t"
     )
     
     add_metrics(
@@ -135,5 +137,6 @@ if __name__ == "__main__":
         original_col="full_text",
         altered_col="EditLens_rewrite_1",
         batch_size=16,
-        sep="\t"
+        input_sep="\t",
+        output_sep="\t"
     )

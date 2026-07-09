@@ -22,8 +22,8 @@ else:
         DTYPE = torch.float32  # CPUs require float32 to prevent runtime crashes
 
 # Folder containing the EditLens files used
-sys.path.insert(0, "editlens_src")
-sys.path.insert(0, "editlens_src/scripts")
+sys.path.insert(0, "EditLens")
+sys.path.insert(0, "EditLens/scripts")
 
 from preprocess import clean_text          # Normalize text for processing
 from train import NormedLinear             # Classification
