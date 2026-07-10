@@ -34,7 +34,7 @@ def rewrite_batch(file_path,
                   output_sep=",",
                   prompt=""):
     
-    df = pd.read_csv(file_path, sep=input_sep).head(5)
+    df = pd.read_csv(file_path, sep=input_sep).shuffle.head(100)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         text_feature="full_text",
         batch_size=16,
         output_sep="\t",
-        prompt="Rewrite the following essay"
+        prompt="Correct this essay's grammar, spelling, and punctuation. Keep the general word choice, sentence structure, and content:\n\n"
     )
 
     import gc
