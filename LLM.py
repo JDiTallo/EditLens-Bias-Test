@@ -66,7 +66,7 @@ def rewrite_batch(file_path,
         batch_rewrites = tokenizer.batch_decode(trimmed_generated_ids, skip_special_tokens=True)
         all_rewrites.extend(batch_rewrites)
 
-    df[f"EditLens_rewrite_{AI_edited_level}"] = all_rewrites
+    df[f"rewritten_essay_{AI_edited_level}"] = all_rewrites
 
     df.to_csv(output_path, sep=output_sep, index=False)
     print(f"\nDone! Saved to {output_path}")
@@ -125,7 +125,7 @@ if __name__ == "__main__":
     rewrite_batch(
         file_path="datasets/ASAP_2.0/combined_ASAP_2.csv", 
         output_path="test_rewritten.tsv", #Intermediate file
-        AI_edited_level=1,
+        AI_edited_level="light",
         text_feature="full_text",
         batch_size=16,
         output_sep="\t",
@@ -144,7 +144,7 @@ if __name__ == "__main__":
         output_path="test_final.tsv",
         AI_edited_level=1,
         original_col="full_text",
-        altered_col="EditLens_rewrite_1",
+        altered_col="rewritten_essay_light",
         batch_size=16,
         input_sep="\t",
         output_sep="\t"
