@@ -129,7 +129,7 @@ if __name__ == "__main__":
         text_feature="full_text",
         batch_size=16,
         output_sep="\t",
-        prompt="Correct this essay's grammar, spelling, and punctuation. Keep the general word choice, sentence structure, and content:\n\n"
+        prompt="Correct this essay's grammar, spelling, and punctuation, but retain a similar word choice, sentence structure, content, etc. Also, only output the contents of the essay, and nothing more.:\n\n"
     )
 
     import gc
