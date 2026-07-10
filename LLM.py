@@ -113,9 +113,9 @@ def add_metrics(file_path,
             all_levs.append(lev)
 
 
-    df[f'EditLens_level_{AI_edited_level}_cosine'] = all_cosines
-    df[f'EditLens_bucket_{AI_edited_level}_ngram'] = all_ngrams
-    df[f'EditLens_probs_{AI_edited_level}_levenshtein'] = all_levs
+    df[f"cosine_distance_{AI_edited_level}"] = all_cosines
+    df[f"ngram_score_{AI_edited_level}"] = all_ngrams
+    df[f"levenshtein_{AI_edited_level}"] = all_levs
 
     df.to_csv(output_path, sep=output_sep, index=False)
     print(f"\nMetrics calculation complete! Saved to {output_path}")
