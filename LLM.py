@@ -34,7 +34,7 @@ def rewrite_batch(file_path,
                   output_sep=",",
                   prompt=""):
     
-    df = pd.read_csv(file_path, sep=input_sep).shuffle.head(100)
+    df = pd.read_csv(file_path, sep=input_sep).sample(n=100, random_state=42)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
