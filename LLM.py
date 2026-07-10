@@ -46,7 +46,7 @@ def rewrite_batch(file_path,
         formatted_prompts = []
         for text in batch_df[text_feature]:
             messages = [
-                {"role": "system", "content": "You are Qwen, created by Alibaba Cloud. You are a helpful assistant."},
+                {"role": "system", "content": "You are a writing assistant tasked with preserving the original meaning of the content, unless told otherwise. Output only the text and include no commentary or explanation."},
                 {"role": "user", "content": f"{prompt}{text}"}
             ]
             chat_text = tokenizer.apply_chat_template(
@@ -56,7 +56,7 @@ def rewrite_batch(file_path,
 
         model_inputs = tokenizer(formatted_prompts, return_tensors="pt", padding=True).to(device)
 
-        generated_ids = model.generate(**model_inputs, max_new_tokens=512)
+        generated_ids = model.generate(**model_inputs, max_new_tokens=1210)
         
         trimmed_generated_ids = [
             output_ids[len(input_ids) :]
@@ -129,7 +129,7 @@ if __name__ == "__main__":
         text_feature="full_text",
         batch_size=16,
         output_sep="\t",
-        prompt="Correct this essay's grammar, spelling, and punctuation, but retain a similar word choice, sentence structure, content, etc. Also, only output the contents of the essay, and nothing more.:\n\n"
+        prompt="Correct this essay's grammar, spelling, and punctuation, but retain a similar word choice, sentence structure, content, etc. Also, only output the contents of the essay, and nothing more:\n\n"
     )
 
     import gc
@@ -142,7 +142,7 @@ if __name__ == "__main__":
     add_metrics(
         file_path="test_rewritten.tsv",
         output_path="test_final.tsv",
-        AI_edited_level=1,
+        AI_edited_level="light",
         original_col="full_text",
         altered_col="rewritten_essay_light",
         batch_size=16,
