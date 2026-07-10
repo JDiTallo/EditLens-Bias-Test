@@ -11,7 +11,7 @@ num_false_positives = 0
 num_true_positives = 0
 num_false_negatives = 0
 for i, essay in data.iterrows():
-    score, bucket = essay['EditLens_score_0'], essay['EditLens_bucket_0']
+    score, bucket = essay['score_original'], essay['bucket_original']
     # predicted_ai = score > SCORE_THRESHOLD
     predicted_ai = bucket > 0
     is_ai = False # TODO: Replace with according condition once ai-generated text is added

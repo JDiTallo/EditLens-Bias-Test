@@ -11,8 +11,8 @@ def test(file_path, text_feature, AI_edited_level, output_path):
   scores_list = df[text_feature].progress_apply(score_text).tolist()
   scores = pd.DataFrame(scores_list)
 
-  df[f"EditLens_score_{AI_edited_level}"] = scores['score']
-  df[f"EditLens_bucket_{AI_edited_level}"] = scores['bucket']
-  df[f"EditLens_probs_{AI_edited_level}"] = scores['probs']
+  df[f"score_{AI_edited_level}"] = scores['score']
+  df[f"bucket_{AI_edited_level}"] = scores['bucket']
+  df[f"probs_{AI_edited_level}"] = scores['probs']
 
   df.to_csv(output_path, sep="\t", index=False)

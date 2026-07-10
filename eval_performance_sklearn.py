@@ -7,7 +7,7 @@ SCORE_THRESHOLD = 0.05
 data = pd.read_csv("Altered Datasets/ASAP 2.0/Output(Level_0_Only).csv", sep="\t")
 
 true = [False] * len(data)
-predicted = [essay['EditLens_bucket_0'] > 0 for _, essay in data.iterrows()]
+predicted = [essay['bucket_original'] > 0 for _, essay in data.iterrows()]
 
 confusion = confusion_matrix(true, predicted)
 num_true_negatives = confusion[0][0]

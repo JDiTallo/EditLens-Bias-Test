@@ -36,14 +36,14 @@ def test(file_path, text_feature, AI_edited_level, output_path, sep="\t"):
             score = float((probs * np.arange(n_buckets)).sum() / (n_buckets - 1))
             
             scores_list.append({
-                f'EditLens_score_{AI_edited_level}': score,
-                f'EditLens_bucket_{AI_edited_level}': bucket,
-                f'EditLens_probs_{AI_edited_level}': probs.tolist()
+                f'score_{AI_edited_level}': score,
+                f'bucket_{AI_edited_level}': bucket,
+                f'probs_{AI_edited_level}': probs.tolist()
             })
 
     scores_df = pd.DataFrame(scores_list)
-    df[f'EditLens_score_{AI_edited_level}'] = scores_df[f'EditLens_score_{AI_edited_level}'].values
-    df[f'EditLens_bucket_{AI_edited_level}'] = scores_df[f'EditLens_bucket_{AI_edited_level}'].values
-    df[f'EditLens_probs_{AI_edited_level}'] = scores_df[f'EditLens_probs_{AI_edited_level}'].values
+    df[f'score_{AI_edited_level}'] = scores_df[f'score_{AI_edited_level}'].values
+    df[f'bucket_{AI_edited_level}'] = scores_df[f'bucket_{AI_edited_level}'].values
+    df[f'probs_{AI_edited_level}'] = scores_df[f'probs_{AI_edited_level}'].values
 
     df.to_csv(output_path, sep=sep, index=False)
