@@ -10,24 +10,24 @@ from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 if torch.cuda.is_available():
     DEVICE = "cuda"
-    DTYPE = torch.bfloat16  # Native fast precision for enterprise GPUs
+    DTYPE = torch.bfloat16
 else:
     try:
         import torch_directml
         DEVICE = torch_directml.device()
-        DTYPE = torch.float32  # DirectML functions best at standard float32
+        DTYPE = torch.float32 
     except ImportError:
-        # Fallback default for local Windows PC without extra setup
+        # Fallback default
         DEVICE = "cpu"
-        DTYPE = torch.float32  # CPUs require float32 to prevent runtime crashes
+        DTYPE = torch.float32  #CPUs require float32 to prevent runtime crashes
 
 # Folder containing the EditLens files used
 sys.path.insert(0, "EditLens")
 sys.path.insert(0, "EditLens/scripts")
 
-from preprocess import clean_text          # Normalize text for processing
-from train import NormedLinear             # Classification
-from inference import infer_n_buckets      # Number of buckets the model outputs to
+from editlens_src.scripts.preprocess import clean_text          #Normalize text for processing
+from editlens_src.scripts.train import NormedLinear             #Classification
+from editlens_src.scripts.inference import infer_n_buckets      #Number of buckets the model outputs to
 
 HF_TOKEN   = os.environ.get("HF_TOKEN", "")
 BASE_MODEL = "meta-llama/Llama-3.2-3B"
