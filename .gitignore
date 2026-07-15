@@ -1,2 +1,4 @@
 __pycache__/
 *.py[cod]
+Altered Datasets/ASAP 2.0/pared_dataset.tsv
+Altered Datasets/ASAP 2.0/light_rewrites_pared_scored.tsv

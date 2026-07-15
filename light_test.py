@@ -4,7 +4,11 @@ from tqdm import tqdm
 
 tqdm.pandas()
 
-def test(file_path, text_feature, AI_edited_level, output_path):
+def test(file_path: str, 
+         text_feature: str, 
+         AI_edited_level: str, 
+         output_path: str):
+  
   df = pd.read_csv(file_path)
   df[text_feature] = df[text_feature].fillna("").astype(str)
 

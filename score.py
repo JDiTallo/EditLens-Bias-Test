@@ -32,7 +32,7 @@ from editlens_src.scripts.inference import infer_n_buckets      #Number of bucke
 HF_TOKEN   = os.environ.get("HF_TOKEN", "")
 BASE_MODEL = "meta-llama/Llama-3.2-3B"
 ADAPTER    = "pangram/editlens_Llama-3.2-3B"
-MAX_LENGTH = 1024
+MAX_LENGTH = 2048
 
 login(token=HF_TOKEN)
 

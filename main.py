@@ -1,4 +1,4 @@
-from light_test import test
+from test import test
 
 test(file_path="datasets/ASAP_2.0/light_rewrites_pared.tsv", 
      output_path="light_rewrites_pared_scored.tsv", 
