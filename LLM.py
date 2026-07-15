@@ -35,7 +35,7 @@ def rewrite_batch(file_path,
                   prompt=""):
     
     df = pd.read_csv(file_path, sep=input_sep)
-    df = df[df["essay_word_count"] <= 1200].reset_index(drop=True)
+    # df = df[df["essay_word_count"] <= 1200].reset_index(drop=True)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
