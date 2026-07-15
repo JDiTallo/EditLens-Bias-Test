@@ -5,7 +5,11 @@ import torch
 from score import score_text, model, tokenizer, n_buckets, DEVICE, MAX_LENGTH, clean_text
 from scipy.special import softmax
 
-def test(file_path, text_feature, AI_edited_level, output_path, sep="\t"):
+def test(file_path: str, 
+         text_feature: str, 
+         AI_edited_level, 
+         output_path: str, 
+         sep="\t"):
     
     df = pd.read_csv(file_path, sep=sep)
     df[text_feature] = df[text_feature].fillna("").astype(str)

@@ -25,17 +25,16 @@ tokenizer = AutoTokenizer.from_pretrained(MODEL_NAME)
 tokenizer.padding_side = "left" 
 tokenizer.pad_token = tokenizer.eos_token
 
-def rewrite_batch(file_path, 
-                  text_feature, 
+def rewrite_batch(file_path: str, 
+                  text_feature: str, 
                   AI_edited_level, 
-                  output_path, 
-                  batch_size=8, 
+                  output_path: str, 
+                  batch_size=8,
                   input_sep=",",
                   output_sep=",",
                   prompt=""):
     
     df = pd.read_csv(file_path, sep=input_sep)
-    # df = df[df["essay_word_count"] <= 1200].reset_index(drop=True)
     df[text_feature] = df[text_feature].fillna("").astype(str)
 
     all_rewrites = []
@@ -82,8 +81,8 @@ def evaluate(original_text: str, altered_text: str):
 
     return cosine, ngram, lev
 
-def add_metrics(file_path, 
-                output_path,
+def add_metrics(file_path: str, 
+                output_path: str,
                 AI_edited_level,
                 original_col,
                 altered_col,
