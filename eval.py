@@ -5,9 +5,22 @@ import seaborn as sns
 import scipy.stats as stats
 import statsmodels.api as sm
 import statsmodels.formula.api as smf
+import sys
+
+sys.path.insert(0, "editlens_src/scripts/eval")
+
+from editlens_src.scripts.eval.threshold import find_optimal_threshold
 
 # Load the dataset
 df = pd.read_csv("Altered Datasets/ASAP 2.0/pared_dataset.tsv", sep="\t")
+
+# Scores of originally written papers with AI written ones
+predictions = np.concatenate([df['score_original'].values, df['score_light'].values])
+
+#Labels human written and AI text (0 and 1, repspectively)
+labels = np.concatenate([np.zeros(len(df)), np.ones(len(df))])
+
+optimal_threshold, max_f1 = find_optimal_threshold(predictions, labels)
 
 # List of demographic groups to check
 demographics = [
@@ -55,14 +68,12 @@ def calculate_classification_metrics(y_true, y_pred):
         "False Positive Rate": fpr
     }
 
-THRESHOLD = 0.03
-
-def eval(df):
+def eval(df, threshold):
     humans_true = np.zeros(len(df))
     ai_true = np.ones(len(df))
 
-    humans_pred = (df['score_original'] >= THRESHOLD).astype(int).values
-    ai_pred = (df['score_light'] >= THRESHOLD).astype(int).values
+    humans_pred = (df['score_original'] >= threshold).astype(int).values
+    ai_pred = (df['score_light'] >= threshold).astype(int).values
 
     human_result = calculate_classification_metrics(humans_true, humans_pred)
     ai_result = calculate_classification_metrics(ai_true, ai_pred)
@@ -82,7 +93,7 @@ def print_result(results, title="Performance"):
         else:
             print(f"{metric}: {score:.4f}")
 
-human_result, ai_result, combined_results = eval(df)
+human_result, ai_result, combined_results = eval(df, optimal_threshold)
 
 # print_result(human_result, "Human Performance")
 # print_result(ai_result, "AI performance")
