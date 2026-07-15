@@ -56,7 +56,7 @@ def rewrite_batch(file_path: str,
 
         model_inputs = tokenizer(formatted_prompts, return_tensors="pt", padding=True).to(device)
 
-        generated_ids = model.generate(**model_inputs, max_new_tokens=1210)
+        generated_ids = model.generate(**model_inputs, max_new_tokens=2048)
         
         trimmed_generated_ids = [
             output_ids[len(input_ids) :]
