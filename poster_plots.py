@@ -1,66 +1,6 @@
-import matplotlib.pyplot as plt
-import pandas as pd
-
-# Load both datasets up front
-df = pd.read_csv("detector_demographic_bias_results.tsv", sep="\t")
-raw = pd.read_csv("Altered Datasets/ASAP 2.0/pared_dataset.tsv", sep="\t")
-
-# 1. Calculate sample sizes (N) for each race/ethnicity from the raw data
-race_counts = raw["race_ethnicity"].value_counts()
-
-sub = df[df["Demographic_Feature"] == "race_ethnicity"].sort_values("AUC")
-
-fig, ax = plt.subplots(figsize=(8, 5)) # Slightly wider to accommodate longer labels
-y_pos = range(len(sub))
-
-# The CI as a horizontal line
-ax.hlines(y_pos, sub["AUC_CI_Lower"], sub["AUC_CI_Upper"], color="#2a78d6", linewidth=2)
-# The point estimate as a dot on top
-ax.scatter(sub["AUC"], y_pos, color="#0c447c", zorder=3, s=60)
-
-# 2. Construct dynamic labels with sample sizes: "Subgroup (N=X,XXX)"
-# Use this if you have a "Sample_Size" column in df
-yticklabels = [
-    f"{row['Subgroup']} (N={int(row['Sample_Size_Students']):,})" 
-    for _, row in sub.iterrows()
-]
-
-ax.set_yticks(y_pos)
-ax.set_yticklabels(yticklabels) # Set the new labels
-ax.set_xlabel("AUC")
-ax.set_title("Detector separability by race/ethnicity")
-plt.tight_layout()
-plt.savefig("auc_by_race.png", dpi=300)
-
-fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
-
-grade = df[df["Demographic_Feature"] == "grade_level"].sort_values("Subgroup")
-
-# Left: FPR and Recall
-x = range(len(grade))
-axes[0].bar([i - 0.2 for i in x], grade["Human_False_Positive_Rate"], width=0.4, label="FPR", color="#eb6834")
-axes[0].bar([i + 0.2 for i in x], grade["AI_Recall_TPR"], width=0.4, label="Recall", color="#2a78d6")
-axes[0].set_xticks(x); axes[0].set_xticklabels(grade["Subgroup"])
-axes[0].set_title("Threshold-dependent metrics"); axes[0].legend()
-
-# Right: AUC
-axes[1].bar(x, grade["AUC"], color="#0c447c")
-axes[1].set_xticks(x); axes[1].set_xticklabels(grade["Subgroup"])
-axes[1].set_ylim(0.9, 1.0)  # zoom in so the flatness is visible
-axes[1].set_title("Threshold-independent metric (AUC)")
-
-plt.tight_layout()
-plt.savefig("grade_calibration_artifact.png", dpi=300)
-
-
-
-
-
-
-
 import os
-import pandas as pd
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 
@@ -78,6 +18,7 @@ plt.rcParams.update({
 
 # 1. Load the Data
 TSV_PATH = "detector_demographic_bias_results.tsv"
+RAW_PATH = "Altered Datasets/ASAP 2.0/pared_dataset.tsv"
 
 if not os.path.exists(TSV_PATH):
     raise FileNotFoundError(
@@ -87,25 +28,87 @@ if not os.path.exists(TSV_PATH):
 
 df = pd.read_csv(TSV_PATH, sep="\t")
 
+# Load raw data if available for first quick plot
+try:
+    raw = pd.read_csv(RAW_PATH, sep="\t")
+    race_counts = raw["race_ethnicity"].value_counts()
+except Exception:
+    # Fallback if raw file isn't present in current execution context
+    race_counts = {}
+
+
+# --- QUICK INITIAL PLOT (Fixed column mapping & references) ---
+def plot_quick_auc_and_artifacts():
+    sub = df[df["Demographic_Feature"] == "race_ethnicity"].sort_values("AUC")
+    if len(sub) == 0:
+        return
+
+    fig, ax = plt.subplots(figsize=(8, 5))
+    y_pos = range(len(sub))
+
+    ax.hlines(y_pos, sub["AUC_CI_Lower"], sub["AUC_CI_Upper"], color="#2a78d6", linewidth=2)
+    ax.scatter(sub["AUC"], y_pos, color="#0c447c", zorder=3, s=60)
+
+    # Use dynamically computed counts from raw dataset fallback if column is missing
+    yticklabels = []
+    for _, row in sub.iterrows():
+        subgroup = row['Subgroup']
+        if 'Sample_Size_Students' in row and not pd.isna(row['Sample_Size_Students']):
+            n_val = int(row['Sample_Size_Students'])
+        else:
+            n_val = int(race_counts.get(subgroup, 0))
+        
+        yticklabels.append(f"{subgroup} (N={n_val:,})" if n_val > 0 else f"{subgroup}")
+
+    ax.set_yticks(y_pos)
+    ax.set_yticklabels(yticklabels)
+    ax.set_xlabel("AUC")
+    ax.set_title("Detector separability by race/ethnicity")
+    plt.tight_layout()
+    plt.savefig("auc_by_race.png", dpi=300)
+    plt.close()
+
+    # Double subplot for grade level metrics
+    grade = df[df["Demographic_Feature"] == "grade_level"].sort_values("Subgroup")
+    if len(grade) > 0:
+        fig, axes = plt.subplots(1, 2, figsize=(11, 4.5))
+        x = range(len(grade))
+        axes[0].bar([i - 0.2 for i in x], grade["Human_False_Positive_Rate"], width=0.4, label="FPR", color="#eb6834")
+        axes[0].bar([i + 0.2 for i in x], grade["AI_Recall_TPR"], width=0.4, label="Recall", color="#2a78d6")
+        axes[0].set_xticks(x)
+        axes[0].set_xticklabels(grade["Subgroup"])
+        axes[0].set_title("Threshold-dependent metrics")
+        axes[0].legend()
+
+        axes[1].bar(x, grade["AUC"], color="#0c447c")
+        axes[1].set_xticks(x)
+        axes[1].set_xticklabels(grade["Subgroup"])
+        axes[1].set_ylim(0.9, 1.0)
+        axes[1].set_title("Threshold-independent metric (AUC)")
+
+        plt.tight_layout()
+        plt.savefig("grade_calibration_artifact.png", dpi=300)
+        plt.close()
+
 
 # --- GRAPH 1: The "Grade-Level Slide" (Line Graph with Error Bars) ---
 def plot_grade_level_slide(df):
     grade_df = df[df["Demographic_Feature"] == "grade_level"].copy()
+    if len(grade_df) == 0:
+        return
     
     # Ensure grade level is treated as a sorted numeric or categorical index
     grade_df["Subgroup"] = pd.to_numeric(grade_df["Subgroup"])
     grade_df = grade_df.sort_values("Subgroup")
     
     # Calculate asymmetric error bounds for the CI
-    # Matplotlib errorbars require: [y - lower_bound, upper_bound - y]
     y = grade_df["Human_False_Positive_Rate"]
-    yerr_lower = y - grade_df["Human_FPR_CI_Lower"]
-    yerr_upper = grade_df["Human_FPR_CI_Upper"] - y
+    yerr_lower = (y - grade_df["Human_FPR_CI_Lower"]).clip(lower=0)
+    yerr_upper = (grade_df["Human_FPR_CI_Upper"] - y).clip(lower=0)
     yerr = np.vstack([yerr_lower, yerr_upper])
 
     fig, ax = plt.subplots(figsize=(7, 5))
     
-    # Plot line and error bars
     ax.errorbar(
         grade_df["Subgroup"], y, yerr=yerr, 
         fmt="-o", color="#d95f02", linewidth=2.5, elinewidth=2, 
@@ -127,11 +130,12 @@ def plot_grade_level_slide(df):
     print("[SUCCESS] Saved: grade_level_fpr_slide.png")
 
 
-# --- GRAPH 2: Demographic FPR Comparison (Grouped Bar Chart) ---
+# --- GRAPH 2: Demographic FPR Comparison (Explicit & Robust Alignment) ---
 def plot_demographic_fpr_comparison(df):
-    # Filter out 'grade_level' to focus purely on socio-demographic features
     demo_features = ["race_ethnicity", "gender", "ell_status", "economically_disadvantaged"]
     plot_df = df[df["Demographic_Feature"].isin(demo_features)].copy()
+    if len(plot_df) == 0:
+        return
     
     # Clean up names for display
     feature_rename = {
@@ -140,48 +144,51 @@ def plot_demographic_fpr_comparison(df):
         "ell_status": "ELL Status",
         "economically_disadvantaged": "Socioeconomic Status"
     }
-    plot_df["Demographic_Feature"] = plot_df["Demographic_Feature"].map(feature_rename)
+    plot_df["Demographic_Category_Label"] = plot_df["Demographic_Feature"].map(feature_rename)
     
-    # Calculate overall baseline FPR to show on the graph
+    # Calculate overall baseline FPR to show on the graph safely
     total_fp = (df["Sample_Size_Students"] * df["Human_False_Positive_Rate"]).sum()
     total_students = df["Sample_Size_Students"].sum()
-    baseline_fpr = total_fp / total_students
+    baseline_fpr = total_fp / total_students if total_students > 0 else df["Human_False_Positive_Rate"].mean()
+
+    # Sort so that bars group nicely by Demographic Feature
+    plot_df = plot_df.sort_values(by=["Demographic_Category_Label", "Subgroup"]).reset_index(drop=True)
 
     fig, ax = plt.subplots(figsize=(10, 6))
     
-    # Render main bar chart
+    # Render main bar chart using explicit hue-mapping to bypass alignment bugs
     sns.barplot(
         data=plot_df,
         y="Subgroup",
         x="Human_False_Positive_Rate",
-        hue="Demographic_Feature",
+        hue="Demographic_Category_Label",
         dodge=False,
         palette="Set2",
         ax=ax
     )
     
-    # Add custom error bars manually to the bars
-    # Extract patches (bars) and map them to the dataframe rows
-    plot_df = plot_df.reset_index(drop=True)
-    for i, bar in enumerate(ax.patches):
-        if i >= len(plot_df):
-            break
-        row = plot_df.iloc[i]
-        
-        # Calculate error limits
+    # Draw error bars perfectly relative to actual visual bar centers
+    # This avoids index mismatch errors common in raw patch access
+    for i, row in plot_df.iterrows():
         x_val = row["Human_False_Positive_Rate"]
         x_lower = row["Human_FPR_CI_Lower"]
         x_upper = row["Human_FPR_CI_Upper"]
         
-        # Draw error bar on top of the bar
-        y_pos = bar.get_y() + bar.get_height() / 2.0
+        # Clip error limits dynamically so bounds stay mathematically sound
+        err_left = max(0, x_val - x_lower)
+        err_right = max(0, x_upper - x_val)
+        
+        # Grab coordinate of corresponding drawn bar patch directly
+        bar_patch = ax.patches[i]
+        y_center = bar_patch.get_y() + bar_patch.get_height() / 2.0
+        
         ax.errorbar(
-            x=[x_val], y=[y_pos], 
-            xerr=[[x_val - x_lower], [x_upper - x_val]],
+            x=[x_val], y=[y_center], 
+            xerr=[[err_left], [err_right]],
             fmt='none', color='black', capsize=4, elinewidth=1.5, capthick=1.5
         )
 
-    # Add a global baseline average line
+    # Add global baseline average line
     ax.axvline(
         baseline_fpr, color="red", linestyle="--", alpha=0.7, 
         label=f"Global Average FPR ({baseline_fpr*100:.1f}%)"
@@ -204,7 +211,7 @@ def plot_demographic_fpr_comparison(df):
 def plot_recall_fpr_tradeoff(df):
     fig, ax = plt.subplots(figsize=(8, 7))
     
-    # Define a custom color palette for the categories
+    # Define custom color palette
     categories = df["Demographic_Feature"].unique()
     colors = sns.color_palette("bright", len(categories))
     color_map = dict(zip(categories, colors))
@@ -235,7 +242,7 @@ def plot_recall_fpr_tradeoff(df):
                 weight="semibold"
             )
 
-    # Target Goal Indicator (Upper-Left Corner represents the Perfect Detector)
+    # Target Goal Indicator (Ideal spot)
     ax.scatter([0.0], [1.0], color="gold", marker="*", s=300, edgecolor="black", label="Ideal Detector Target")
     
     # Formatting
@@ -246,7 +253,6 @@ def plot_recall_fpr_tradeoff(df):
     ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda val, _: f"{val*100:.0f}%"))
     ax.yaxis.set_major_formatter(plt.FuncFormatter(lambda val, _: f"{val*100:.0f}%"))
     
-    # Set generous limits to display annotations clearly
     ax.set_xlim(-0.01, 0.22)
     ax.set_ylim(0.91, 1.01)
     
@@ -258,10 +264,11 @@ def plot_recall_fpr_tradeoff(df):
     print("[SUCCESS] Saved: recall_fpr_tradeoff_scatter.png")
 
 
-# --- Execution Execution ---
+# --- Execution ---
 if __name__ == "__main__":
-    print("Generating visual assets for poster...")
+    print("Generating visual assets...")
+    plot_quick_auc_and_artifacts()
     plot_grade_level_slide(df)
     plot_demographic_fpr_comparison(df)
     plot_recall_fpr_tradeoff(df)
-    print("All poster graphics created successfully!")
+    print("All graphics created successfully!")

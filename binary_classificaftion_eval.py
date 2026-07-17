@@ -6,7 +6,6 @@ import math
 
 from sklearn.metrics import roc_auc_score
 
-# Ensure custom import path is included
 sys.path.insert(0, "editlens_src/scripts/eval")
 from editlens_src.scripts.eval.threshold import find_optimal_threshold
 
@@ -23,7 +22,7 @@ DATASET_PATH = "Altered Datasets/ASAP 2.0/pared_dataset.tsv"
 OUTPUT_TSV_PATH = "detector_demographic_bias_results.tsv"
 
 # AUC confidence interval metrics
-N_BOOTSTRAP = 200
+N_BOOTSTRAP = 2000
 RANDOM_SEED = 42
 
 
@@ -37,20 +36,39 @@ DEMOGRAPHIC_COLUMNS = [
 ]
 
 def compute_auc(y_true: np.ndarray, y_scores: np.ndarray) -> float:
-    y_true = np.asarray(y_true)
-    if np.sum(y_true == 1) == 0 or np.sum(y_true == 0) == 0:
-        return np.nan
-    return float(roc_auc_score(y_true, y_scores))
 
+    y_true = np.asarray(y_true)
+    y_scores = np.asarray(y_scores)
+    
+    # Checking for nan inputs
+    if len(y_true) == 0 or len(y_scores) == 0:
+        print("Warning: Empty slice encountered. Skipping AUC calculation.")
+        return None
+        
+    # 2. Filter NaN valutes
+    nan_mask = ~np.isnan(y_true) & ~np.isnan(y_scores)
+    y_true = y_true[nan_mask]
+    y_scores = y_scores[nan_mask]
+    
+    if len(y_true) == 0:
+        print("Warning: All data points were NaN. Skipping AUC calculation.")
+        return None
+
+    # 3. Verify that more than one class
+    unique_classes = np.unique(y_true)
+    if len(unique_classes) < 2:
+        print(f"Warning: Only one class present ({unique_classes}) in this group. ROC AUC is undefined.")
+        return None
+        
+    try:
+        return float(roc_auc_score(y_true, y_scores))
+    except Exception as e:
+        print(f"Error computing AUC: {e}")
+        return None
 
 def bootstrap_auc_ci(sub_df: pd.DataFrame, n_boot: int = N_BOOTSTRAP, alpha: float = 0.05,
                       seed: int = RANDOM_SEED) -> tuple:
-    """
-    95% CI for AUC via bootstrap resampling. Resamples STUDENTS (not essays)
-    with replacement, so each resampled student's original + light-rewrite
-    pair stays together -- this preserves the paired structure of your data
-    instead of pretending the two essays are independent draws.
-    """
+
     n = len(sub_df)
     if n < 2:
         return (np.nan, np.nan)
@@ -162,7 +180,6 @@ def main():
     
     export_data = []
 
-    # Loop and analyze
     for feature, categories in demographics_dict.items():
         print(f"\nEvaluating Category Group: {feature.upper()}")
         print("=" * 50)
@@ -177,31 +194,19 @@ def main():
             total_essays = len(sub_df) * 2
 
             # --- Confidence intervals ---
-            # FPR is computed over all human-written essays in this subgroup:
-            # denominator = fp + tn = len(sub_df) (every row contributes one
-            # human essay with true label 0). Successes = essays wrongly
-            # flagged as AI (fp).
+            # FPR
             n_human = human_res["_fp"] + human_res["_tn"]
             fpr_lower, fpr_upper = wilson_ci(human_res["_fp"], n_human)
 
-            # Recall is computed over all AI-edited essays in this subgroup:
-            # denominator = tp + fn = len(sub_df). Successes = essays
-            # correctly flagged as AI (tp).
+            # Recall
             n_ai = ai_res["_tp"] + ai_res["_fn"]
             recall_lower, recall_upper = wilson_ci(ai_res["_tp"], n_ai)
 
-            # Precision is computed over ALL essays flagged as AI, pooled
-            # across both the human and AI-edited arms (comb_res already does
-            # this pooling). Denominator = tp + fp = every essay the detector
-            # called "AI", regardless of which arm it actually came from.
-            # Successes = the ones it got right (tp).
+            # Precision
             n_flagged = comb_res["_tp"] + comb_res["_fp"]
             precision_lower, precision_upper = wilson_ci(comb_res["_tp"], n_flagged)
 
-            # AUC: threshold-independent measure of how well the detector
-            # separates this subgroup's human essays from its AI-edited
-            # essays, using the raw continuous scores (not the thresholded
-            # predictions used above).
+            # AUC
             auc_y_true = np.concatenate([np.zeros(len(sub_df)), np.ones(len(sub_df))])
             auc_y_scores = np.concatenate([sub_df['score_original'].values, sub_df['score_light'].values])
             auc = compute_auc(auc_y_true, auc_y_scores)
@@ -246,7 +251,7 @@ def main():
                 "Combined_Accuracy": comb_res['Accuracy']
             })
 
-    # Export structured results
+    # Export results
     if export_data:
         export_df = pd.DataFrame(export_data)
         export_df.to_csv(OUTPUT_TSV_PATH, sep='\t', index=False)
