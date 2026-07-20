@@ -5,26 +5,15 @@ import sys
 import math
 
 from sklearn.metrics import roc_auc_score
-
-sys.path.insert(0, "editlens_src/scripts/eval")
-from editlens_src.scripts.eval.threshold import find_optimal_threshold
-
 from statsmodels.stats.proportion import proportion_confint
 
-def wilson_ci(successes: int, n: int, alpha: float = 0.05) -> tuple:
-    if n == 0:
-        return (np.nan, np.nan)
-    lower, upper = proportion_confint(count=successes, nobs=n, alpha=alpha, method="wilson")
-    return (lower, upper)
+# Detects folder with evaluation script
+sys.path.insert(0, "editlens_src/scripts/eval")
 
+from editlens_src.scripts.eval.threshold import find_optimal_threshold
 
 DATASET_PATH = "Altered Datasets/ASAP 2.0/pared_dataset.tsv"
-OUTPUT_TSV_PATH = "detector_demographic_bias_results.tsv"
-
-# AUC confidence interval metrics
-N_BOOTSTRAP = 2000
-RANDOM_SEED = 42
-
+OUTPUT_TSV_PATH = "datasets/detector_demographic_bias_results.tsv"
 
 DEMOGRAPHIC_COLUMNS = [
     'race_ethnicity', 
@@ -35,26 +24,38 @@ DEMOGRAPHIC_COLUMNS = [
     'grade_level'
 ]
 
+# AUC confidence interval metrics
+N_BOOTSTRAP = 2000
+RANDOM_SEED = 42
+
+
+def wilson_ci(successes: int, n: int, alpha: float = 0.05) -> tuple:
+    if n == 0:
+        return (np.nan, np.nan)
+    lower, upper = proportion_confint(count=successes, nobs=n, alpha=alpha, method="wilson")
+    return (lower, upper)
+
+
 def compute_auc(y_true: np.ndarray, y_scores: np.ndarray) -> float:
 
     y_true = np.asarray(y_true)
     y_scores = np.asarray(y_scores)
     
-    # Checking for nan inputs
+    # Checking for NaN inputs
     if len(y_true) == 0 or len(y_scores) == 0:
         print("Warning: Empty slice encountered. Skipping AUC calculation.")
         return None
         
-    # 2. Filter NaN valutes
+    # Filter NaN values
     nan_mask = ~np.isnan(y_true) & ~np.isnan(y_scores)
     y_true = y_true[nan_mask]
     y_scores = y_scores[nan_mask]
     
     if len(y_true) == 0:
-        print("Warning: All data points were NaN. Skipping AUC calculation.")
+        print("Error: All data points were NaN.")
         return None
 
-    # 3. Verify that more than one class
+    # Verify that there is more than one class
     unique_classes = np.unique(y_true)
     if len(unique_classes) < 2:
         print(f"Warning: Only one class present ({unique_classes}) in this group. ROC AUC is undefined.")
@@ -159,10 +160,8 @@ def format_ci(lower: float, upper: float) -> str:
     return f"[{lower:.4f}, {upper:.4f}]"
 
 
-def main():
-    print("--- Starting Demographic Bias Pipeline ---")
-    
-    # Load and optimize
+def main():    
+
     df = load_data(DATASET_PATH)
     print(f"Dataset successfully loaded. Total Students: {len(df)}")
     
@@ -193,7 +192,7 @@ def main():
             human_res, ai_res, comb_res = evaluate_threshold(sub_df, optimal_threshold)
             total_essays = len(sub_df) * 2
 
-            # --- Confidence intervals ---
+            #Confidence intervals
             # FPR
             n_human = human_res["_fp"] + human_res["_tn"]
             fpr_lower, fpr_upper = wilson_ci(human_res["_fp"], n_human)
@@ -212,7 +211,6 @@ def main():
             auc = compute_auc(auc_y_true, auc_y_scores)
             auc_lower, auc_upper = bootstrap_auc_ci(sub_df)
 
-            # Print console metrics dynamically
             print(f"\nSubgroup: {category} (Sample Size: {len(sub_df)} students / {total_essays} essays)")
             print(f"  [Human Essays (Innocence Check)]")
             print(f"    - False Positive Rate:      {format_metric(human_res['False Positive Rate'])}  95% CI: {format_ci(fpr_lower, fpr_upper)}")

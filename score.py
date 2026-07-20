@@ -8,19 +8,6 @@ from peft import PeftModel
 from scipy.special import softmax
 from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
-if torch.cuda.is_available():
-    DEVICE = "cuda"
-    DTYPE = torch.bfloat16
-else:
-    try:
-        import torch_directml
-        DEVICE = torch_directml.device()
-        DTYPE = torch.float32 
-    except ImportError:
-        # Fallback default
-        DEVICE = "cpu"
-        DTYPE = torch.float32  #CPUs require float32 to prevent runtime crashes
-
 # Folder containing the EditLens files used
 sys.path.insert(0, "editlens_src")
 sys.path.insert(0, "editlens_src/scripts")
@@ -34,13 +21,26 @@ BASE_MODEL = "meta-llama/Llama-3.2-3B"
 ADAPTER    = "pangram/editlens_Llama-3.2-3B"
 MAX_LENGTH = 2048
 
+if torch.cuda.is_available():
+    DEVICE = "cuda"
+    DTYPE = torch.bfloat16
+else:
+    try:
+        import torch_directml
+        DEVICE = torch_directml.device()
+        DTYPE = torch.float32 
+    except ImportError:
+        # Fallback default
+        DEVICE = "cpu"
+        DTYPE = torch.float32  #CPUs require float32 to prevent runtime crashes
+
+
 login(token=HF_TOKEN)
 
 def load_model():
 
     # How many input catagories (buckets) exists
     n_buckets = infer_n_buckets(ADAPTER)
-    # print(f"There are {n_buckets} classification buckets in the adapter")
 
     # Loads the tokenizer
     tokenizer = AutoTokenizer.from_pretrained(BASE_MODEL)
@@ -70,7 +70,7 @@ def load_model():
 
 model, tokenizer, n_buckets = load_model()
 
-@torch.no_grad()  # No gradients needed, as the model is just scoring
+@torch.no_grad()
 def score_text(text: str) -> dict:
 
     """
